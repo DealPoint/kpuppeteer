@@ -2,11 +2,51 @@
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <packaging>pom</packaging>
-  <name>kpuppeteer</name>
+
   <groupId>io.dealpoint.kpuppeteer</groupId>
   <artifactId>kpuppeteer-parent</artifactId>
   <version>1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>kpuppeteer</name>
+  <description>Kotlin-based remote control API for Headless Chrome–based on chropro with
+    functionality similar to Puppeteer
+  </description>
+  <url>https://github.com/DealPoint/kpuppeteer</url>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Thomas Jung</name>
+      <email>tj@dealpoint.io</email>
+      <organization>DealPoint</organization>
+      <organizationUrl>https://www.dealpoint.io</organizationUrl>
+    </developer>
+    <developer>
+      <name>Joshua Fairchild</name>
+      <email>tjoshua@dealpoint.io</email>
+      <organization>DealPoint</organization>
+      <organizationUrl>https://www.dealpoint.io</organizationUrl>
+    </developer>
+    <developer>
+      <name>Nick Sherred</name>
+      <email>nick@dealpoint.io</email>
+      <organization>DealPoint</organization>
+      <organizationUrl>https://www.dealpoint.io</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/DealPoint/kpuppeteer.git</connection>
+    <developerConnection>scm:git:ssh://github.com/DealPoint/kpuppeteer.git</developerConnection>
+    <url>http://github.com/DealPoint/kpuppeteer/tree/master</url>
+  </scm>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
