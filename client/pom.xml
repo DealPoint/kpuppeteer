@@ -41,7 +41,7 @@
           <includePluginDependencies>true</includePluginDependencies>
           <arguments>
             <argument>
-              ${project.basedir}/src
+              ${project.basedir}/src/main/kotlin
             </argument>
           </arguments>
 
