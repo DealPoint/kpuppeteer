@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.dealpoint.kpuppeteer.utils.logger
-
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.drafts.Draft_17
 import org.java_websocket.handshake.ServerHandshake
@@ -26,8 +25,8 @@ class RpcClient(url: String) : AutoCloseable {
   private val methodFutures = ConcurrentHashMap<Long, CompletableFuture<JsonNode>>()
   private val eventFutures = ConcurrentHashMap<String, MutableList<CompletableFuture<JsonNode>>>()
   private val eventListeners = ConcurrentHashMap<String, MutableList<Consumer<JsonNode>>>()
+  private val socket: RpcSocket
   internal var closeReason: Exception? = null
-  internal val socket: RpcSocket
 
   init {
 
