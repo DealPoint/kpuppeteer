@@ -13,7 +13,7 @@ import java.util.regex.Pattern
 import javax.annotation.Generated
 
 const val GENERATED_FILE_INDENT = "  "
-const val GENERATED_PACKAGE = "io.dealpoint.kpuppeteer.client"
+const val GENERATED_PACKAGE = "io.dealpoint.kpuppeteer.generated"
 const val JS_PROTOCOL =
   "https://chromium.googlesource.com/v8/v8/+/master/src/inspector/js_protocol.json?format=text"
 const val BROWSER_PROTOCOL =
@@ -25,19 +25,12 @@ fun main(args: Array<String>) {
 
 class Codegen(args: Array<String>) {
 
-  private val clientClass = ClassName(
-    Codegen::class.java.`package`.name + ".rpc", "RpcClient")
   private val objectMapper = jacksonObjectMapper()
   private val outDir = if (args.isNotEmpty()) File(args[0]) else null
   private val pattern = Pattern.compile("([A-Z]+)(.*)")
-  private val domainTypeSpecs = mutableMapOf<String, TypeSpec.Builder>()
   private val protocol =
     loadProtocol(BROWSER_PROTOCOL)
       .merge(loadProtocol(JS_PROTOCOL))
-  private val generatedAnnotation = AnnotationSpec.builder(Generated::class)
-    .addMember("value = [%S]", Codegen::class.qualifiedName!!)
-    .addMember("date = %S", Instant.now().toString())
-    .build()
 
   init {
     log.info("initializing ${protocol.domains.size} domains")
@@ -55,21 +48,7 @@ class Codegen(args: Array<String>) {
 
   private fun initializeDomains() {
     for (domain in protocol.domains) {
-      try {
-        val domainName = domain.domain!!
-        val domainTypeBuilder = TypeSpec.classBuilder(domain.simpleName())
-          .addAnnotation(generatedAnnotation)
-          .primaryConstructor(FunSpec.constructorBuilder()
-            .addParameter("rpcClient", clientClass)
-            .build())
-          .addProperty(PropertySpec.builder("rpcClient", clientClass)
-            .initializer("rpcClient")
-            .build())
-        domainTypeSpecs.put(domainName, domainTypeBuilder)
-        log.info("initialized TypeSpec builder for domain $domainName")
-      } catch (ex: Exception) {
-        log.error("error initializing domain $domain.domain: $ex")
-      }
+      domain.initialize()
     }
     // this must wait until after the TypeSpec for each domain has been initialized
     for (domain in protocol.domains) {
@@ -212,8 +191,7 @@ class Codegen(args: Array<String>) {
         if (parameter.className == null) {
           val typeName =
             cap(coalesce(parameter.id, parameter.name, "anonymous")!!)
-          parameter.className =
-            ClassName(GENERATED_PACKAGE, domain.simpleName(), typeName)
+          parameter.className = domain.classNameForType(typeName)
           buildDataClass(
             typeName, parameter.description, parameter.properties, domain)
         }
@@ -228,9 +206,9 @@ class Codegen(args: Array<String>) {
   }
 
   private fun genEntrypoint(protocol: Protocol) {
-    log.info("generating entrypoint KPuppeteer")
-    val kpuppeteer = TypeSpec.classBuilder("KPuppeteer")
-        .addSuperinterface(Closeable::class)
+    log.info("generating entrypoint Transport")
+    val transport = TypeSpec.classBuilder("Transport")
+        .addSuperinterface(AutoCloseable::class)
       .addProperty(PropertySpec
         .builder("rpcClient", clientClass, KModifier.PRIVATE)
         .initializer("RpcClient(webSocketDebuggerUrl)")
@@ -242,22 +220,22 @@ class Codegen(args: Array<String>) {
 
     for (domain in protocol.domains) {
       val className = ClassName("", domain.simpleName())
-      kpuppeteer.addProperty(PropertySpec
+      transport.addProperty(PropertySpec
         .builder(uncap(domain.domain), className)
         .initializer(domain.simpleName() + "(rpcClient)")
         .build())
     }
 
-    kpuppeteer.primaryConstructor(constructor.build())
+    transport.primaryConstructor(constructor.build())
       .addFunction(FunSpec.builder("close")
       .addModifiers(KModifier.OVERRIDE)
       .addStatement("rpcClient.close()")
       .build())
 
     writeToOutDir(
-      FileSpec.builder(GENERATED_PACKAGE, "KPuppeteer")
+      FileSpec.builder(GENERATED_PACKAGE, "Transport")
         .indent(GENERATED_FILE_INDENT)
-        .addType(kpuppeteer.build()).build())
+        .addType(transport.build()).build())
   }
 
   private fun buildDataClass(
@@ -289,7 +267,7 @@ class Codegen(args: Array<String>) {
     typeSpec.primaryConstructor(constructor.build())
     domainTypeSpecs[domain.domain]!!.addType(typeSpec.build())
     log.info("generated data/abstract class ${domain.simpleName()}.$typeName")
-    return ClassName(GENERATED_PACKAGE, domain.simpleName(), typeName)
+    return domain.classNameForType(typeName)
   }
 
   private fun coalesce(vararg strs: String?): String? {
@@ -323,6 +301,15 @@ class Codegen(args: Array<String>) {
     }
   }
 
-  companion object { val log = logger() }
+  companion object {
+    val log = logger()
+    val domainTypeSpecs = mutableMapOf<String, TypeSpec.Builder>()
+    val generatedAnnotation = AnnotationSpec.builder(Generated::class)
+      .addMember("value = [%S]", Codegen::class.qualifiedName!!)
+      .addMember("date = %S", Instant.now().toString())
+      .build()
+    val clientClass = ClassName(
+      Codegen::class.java.`package`.name + ".rpc", "RpcClient")
+  }
 
 }

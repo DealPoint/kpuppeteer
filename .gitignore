@@ -18,6 +18,9 @@
 *.tar.gz
 *.rar
 
+# Generated files
+client/src/main/kotlin/io/dealpoint/kpuppeteer/generated/
+
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
