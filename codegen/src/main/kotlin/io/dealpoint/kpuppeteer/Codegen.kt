@@ -132,7 +132,6 @@ class Codegen(args: Array<String>) {
     val domainType = domainTypeSpecs[domain.domain]!!
     for (command in domain.commands) {
       try {
-
         val funSpec = FunSpec.builder(command.name!!)
         val kDoc = StringBuilder()
         if (command.description != null) {
@@ -147,19 +146,25 @@ class Codegen(args: Array<String>) {
         val returnType = ParameterizedTypeName.get(
           CompletableFuture::class.asClassName(), resultType)
         funSpec.returns(returnType)
-          .addStatement("val params = hashMapOf<String, Any?>()")
+          .addStatement("val params = hashMapOf<String, Any>()")
         for (param in command.parameters) {
           val type = typeNameForParameter(param, domain)
-          val paramSpec = if (type != null) {
-            val augmentedType = if (param.optional) {
-              type.asNullable()
-            } else type.asNonNullable()
-            ParameterSpec.builder(param.name!!, augmentedType).build()
+          val paramSpec = (if (type == null) {
+            ParameterSpec.builder(param.name!!, Any::class)
           } else {
-            ParameterSpec.builder(param.name!!, Any::class).build()
-          }
+            if (param.optional) {
+              ParameterSpec
+                .builder(param.name!!, type.asNullable())
+                .defaultValue("null")
+            } else {
+              ParameterSpec.builder(param.name!!, type.asNonNullable())
+            }
+          }).build()
+          val defaultExpression = "params.put(\"${param.name!!}\", ${paramSpec.name})"
+          val nullSafetyExpression = "${param.name}?.let { $defaultExpression }"
           funSpec
-            .addStatement("params.put(\"${param.name!!}\", ${paramSpec.name})")
+            .addStatement(
+              if (param.optional) nullSafetyExpression else defaultExpression)
             .addParameter(paramSpec)
           if (param.description != null) {
             kDoc.append("@param ").append(param.name).append(" ")
@@ -272,8 +277,10 @@ class Codegen(args: Array<String>) {
       if (member.name == "object") {
         member.name = "object_"
       }
-      constructor.addParameter(
-        "val " + member.name!!, typeNameForParameter(member, domain)!!)
+      val memberType = typeNameForParameter(member, domain)!!
+      val augmentedType = if (member.optional)
+        memberType.asNullable() else memberType.asNonNullable()
+      constructor.addParameter("val " + member.name!!, augmentedType)
       if (member.description != null) {
         typeSpec.addKdoc(
           member.name!! + ": " + member.description.replace("%", "%%") + "\n")
