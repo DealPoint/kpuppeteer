@@ -48,7 +48,7 @@ class RpcClient(url: String) : AutoCloseable {
     }
   }
 
-  fun call(method: String, params: Map<String, Any>): CompletableFuture<JsonNode> {
+  fun call(method: String, params: Map<String, Any?>): CompletableFuture<JsonNode> {
     if (closeReason != null) {
       throw IllegalStateException("closed", closeReason)
     }
@@ -60,12 +60,12 @@ class RpcClient(url: String) : AutoCloseable {
     return future
   }
 
-  fun <T> call(method: String, params: Map<String, Any>, resultType: Class<T>): CompletableFuture<T> {
+  fun <T> call(method: String, params: Map<String, Any?>, resultType: Class<T>): CompletableFuture<T> {
     return call(method, params).thenApply { result -> objectMapper.treeToValue(result, resultType) }
   }
 
   @Synchronized
-  fun addEventListener(method: String, listener: Consumer<JsonNode>) {
+  private fun addEventListener(method: String, listener: Consumer<JsonNode>) {
     var list = eventListeners[method]
     if (list == null) {
       list = Collections.synchronizedList(ArrayList())
@@ -113,6 +113,7 @@ class RpcClient(url: String) : AutoCloseable {
     val future = methodFutures.remove(response.id)
     if (future != null) {
       if (response.error != null) {
+        log.error(response.error.message)
         future.completeExceptionally(RpcException(response.error.code, response.error.message))
       }
       future.complete(response.result)
@@ -143,13 +144,12 @@ class RpcClient(url: String) : AutoCloseable {
   internal inner class RpcSocket(url: String) : WebSocketClient(URI.create(url), Draft_17()) {
 
     override fun onMessage(message: String) {
-      println("Message: " + message.substring(0, Math.min(message.length, 2048)))
       val response = objectMapper.readValue<RpcResponse>(message)
 
-      if (response.method == null) {
-        dispatchResponse(response)
-      } else {
+      if (response.method !== null && response.params !==null) {
         dispatchEvent(response.method, response.params)
+      } else {
+        dispatchResponse(response)
       }
     }
 
@@ -161,7 +161,7 @@ class RpcClient(url: String) : AutoCloseable {
     }
 
     override fun onError(e: Exception) {
-      e.printStackTrace()
+      log.error(e.message)
       this@RpcClient.close(e)
     }
 

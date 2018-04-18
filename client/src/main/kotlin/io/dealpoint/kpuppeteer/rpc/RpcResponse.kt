@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode
 
 data class RpcResponse(
   val id: Long = 0,
-  val result: JsonNode? = null,
-  val error: RpcError? = null,
-  val method: String? = null,
-  val params: JsonNode
+  val result: JsonNode?,
+  val error: RpcError?,
+  val method: String?,
+  val params: JsonNode?
 )
