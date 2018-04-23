@@ -36,7 +36,6 @@ class ChromeProcess(pathToChrome: String? = DEFAULT_CHROME_INSTALLATION) : AutoC
         errorStreamReader.close()
         return match.value
       }
-      log.info(errorStreamReader.ready().toString())
     } while (errorStreamReader.ready())
     errorStreamReader.close()
     throw Error("could not find web socket url in stderr")
