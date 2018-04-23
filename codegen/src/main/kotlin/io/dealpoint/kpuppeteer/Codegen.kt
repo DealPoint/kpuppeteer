@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 import java.util.regex.Pattern
 import javax.annotation.Generated
+import kotlin.reflect.jvm.internal.impl.renderer.KeywordStringsGenerated
 
 const val GENERATED_FILE_INDENT = "  "
 const val GENERATED_PACKAGE = "io.dealpoint.kpuppeteer.generated"
@@ -122,9 +123,7 @@ class Codegen(args: Array<String>) {
           buildDataClass(
             command.name, command.description, command.returns, domain)
         }
-        val returnType = ParameterizedTypeName.get(
-          CompletableFuture::class.asClassName(), resultType)
-        funSpec.returns(returnType)
+        funSpec.returns(resultType)
           .addStatement("val params = hashMapOf<String, Any>()")
         for (param in command.parameters) {
           val type = typeNameForParameter(param, domain)
@@ -139,7 +138,7 @@ class Codegen(args: Array<String>) {
               ParameterSpec.builder(param.name!!, type.asNonNullable())
             }
           }).build()
-          val defaultExpression = "params.put(\"${param.name!!}\", ${paramSpec.name})"
+          val defaultExpression = "params[\"${param.name!!}\"] = ${paramSpec.name}"
           val nullSafetyExpression = "${param.name}?.let { $defaultExpression }"
           funSpec
             .addStatement(
@@ -242,18 +241,16 @@ class Codegen(args: Array<String>) {
     name: String, description: String?, members: List<Parameter>, domain: Domain)
     : ClassName {
     val typeName = cap(name)
-    val typeSpec = TypeSpec.classBuilder(typeName).addModifiers(
-      if (members.isEmpty()) KModifier.ABSTRACT else KModifier.DATA)
+    val modifier = if (members.isEmpty())
+      KModifier.ABSTRACT else KModifier.DATA
+    val typeSpec = TypeSpec.classBuilder(typeName).addModifiers(modifier)
     val constructor = FunSpec.constructorBuilder()
     if (description != null) {
       typeSpec.addKdoc(description.replace("%", "%%") + "\n")
     }
     for (member in members) {
-      if (member.name == "this") {
-        member.name = "this_"
-      }
-      if (member.name == "object") {
-        member.name = "object_"
+      if (member.name in KeywordStringsGenerated.KEYWORDS) {
+        member.name = "`${member.name}`"
       }
       val memberType = typeNameForParameter(member, domain)!!
       val augmentedType = if (member.optional)
@@ -264,9 +261,11 @@ class Codegen(args: Array<String>) {
           member.name!! + ": " + member.description.replace("%", "%%") + "\n")
       }
     }
-    typeSpec.primaryConstructor(constructor.build())
+    if (modifier == KModifier.DATA) {
+      typeSpec.primaryConstructor(constructor.build())
+    }
     domainTypeSpecs[domain.domain]!!.addType(typeSpec.build())
-    log.info("generated data/abstract class ${domain.simpleName()}.$typeName")
+    log.info("generated ${modifier.name} class ${domain.simpleName()}.$typeName")
     return domain.classNameForType(typeName)
   }
 

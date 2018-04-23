@@ -14,10 +14,12 @@ import java.util.*
 import java.util.Collections.emptyList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.function.Consumer
 
 private val emptyListeners = emptyList<Consumer<JsonNode>>()
+const val FUTURE_TIMEOUT_SECONDS: Long = 5
 
 class RpcClient(url: String) : AutoCloseable {
 
@@ -60,8 +62,10 @@ class RpcClient(url: String) : AutoCloseable {
     return future
   }
 
-  fun <T> call(method: String, params: Map<String, Any?>, resultType: Class<T>): CompletableFuture<T> {
-    return call(method, params).thenApply { result -> objectMapper.treeToValue(result, resultType) }
+  fun <T> call(method: String, params: Map<String, Any?>, resultType: Class<T>): T {
+    return call(method, params)
+      .thenApply { result -> objectMapper.treeToValue(result, resultType) }
+      .get(FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
   }
 
   @Synchronized
