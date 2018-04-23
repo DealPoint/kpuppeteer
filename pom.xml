@@ -48,14 +48,24 @@
     <url>http://github.com/DealPoint/kpuppeteer/tree/master</url>
   </scm>
 
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.major.version>1.8</java.major.version>
     <maven.compiler.source>${java.major.version}</maven.compiler.source>
     <maven.compiler.target>${java.major.version}</maven.compiler.target>
     <kotlin.compiler.jvmTarget>${java.major.version}</kotlin.compiler.jvmTarget>
-
-    <kotlin.version>1.2.31</kotlin.version>
+    <kotlin.version>1.2.40</kotlin.version>
     <junit.version>5.1.1</junit.version>
     <maven-assembly.version>3.1.0</maven-assembly.version>
     <maven-jar.version>3.0.2</maven-jar.version>
@@ -63,12 +73,14 @@
     <jackson.kotlin.version>2.9.4.1</jackson.kotlin.version>
     <java.websocket.version>1.3.0</java.websocket.version>
     <logback.version>1.2.3</logback.version>
+    <mockk.version>1.7.15</mockk.version>
   </properties>
 
   <modules>
     <module>codegen</module>
     <module>client</module>
   </modules>
+
 
   <dependencies>
     <dependency>
@@ -119,31 +131,61 @@
       <artifactId>logback-core</artifactId>
       <version>${logback.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.mockk</groupId>
+      <artifactId>mockk</artifactId>
+      <version>${mockk.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.jetbrains.kotlin</groupId>
-        <artifactId>kotlin-maven-plugin</artifactId>
-        <version>${kotlin.version}</version>
-        <executions>
-          <execution>
-            <id>compile</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>test-compile</id>
-            <goals>
-              <goal>test-compile</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>2.2.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>2.9.1</version>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.6</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
