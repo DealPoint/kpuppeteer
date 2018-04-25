@@ -5,7 +5,7 @@
 
   <groupId>io.dealpoint.kpuppeteer</groupId>
   <artifactId>kpuppeteer-parent</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>kpuppeteer</name>
@@ -72,7 +72,7 @@
     <kotlinpoet.version>0.7.0</kotlinpoet.version>
     <jackson.kotlin.version>2.9.4.1</jackson.kotlin.version>
     <java.websocket.version>1.3.0</java.websocket.version>
-    <logback.version>1.2.3</logback.version>
+    <slf4j.version>1.6.1</slf4j.version>
     <mockk.version>1.7.15</mockk.version>
   </properties>
 
@@ -113,23 +113,18 @@
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
-      <artifactId>kotlin-stdlib</artifactId>
+      <artifactId>kotlin-stdlib-jdk8</artifactId>
       <version>${kotlin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>org.java-websocket</groupId>
       <artifactId>Java-WebSocket</artifactId>
       <version>${java.websocket.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-      <version>${logback.version}</version>
     </dependency>
     <dependency>
       <groupId>io.mockk</groupId>

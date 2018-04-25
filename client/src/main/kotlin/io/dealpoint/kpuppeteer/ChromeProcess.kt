@@ -2,6 +2,7 @@ package io.dealpoint.kpuppeteer
 
 import io.dealpoint.kpuppeteer.utils.logger
 import java.io.File
+import kotlin.concurrent.thread
 
 const val DEFAULT_CHROME_INSTALLATION = "/Applications/Google Chrome.app/Contents/MacOS/"
 
@@ -19,18 +20,31 @@ class ChromeProcess(pathToChrome: String? = DEFAULT_CHROME_INSTALLATION) : AutoC
   val webSocketURL = this.getChromeWebSocketURL()
   val hostPort = webSocketURL.substringBefore("/devtools/browser/")
 
+  private val closingThread = thread(
+    start = false,
+    name = "chrome shutdown hook",
+    isDaemon = true
+  ) {
+    this.close()
+  }
+
+  init {
+    Runtime.getRuntime().addShutdownHook(closingThread)
+  }
+
   override fun close() {
+    log.info("shutting down chrome")
     this.errorStream.close()
     this.process.destroyForcibly()
   }
 
   private fun getChromeWebSocketURL(): String {
     log.info("attempting to get chrome web socket url from stderr")
-    val regex = Regex("(ws:\\/\\/.*)")
+    val regex = Regex("(ws://.*)")
     val errorStreamReader = errorStream.bufferedReader()
     do {
       val line = errorStreamReader.readLine()
-      log.info(line)
+      log.debug(line)
       val match = regex.find(line)
       if (match !== null) {
         errorStreamReader.close()
