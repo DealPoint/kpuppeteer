@@ -32,8 +32,8 @@ class KPuppeteer(val transportManager: TransportManager) : AutoCloseable {
 
   companion object {
     private val log = logger()
-    fun launch(): KPuppeteer {
-      val rpcManager = ChromeTransportManager(ChromeProcess())
+    fun launch(pathToChrome: String): KPuppeteer {
+      val rpcManager = ChromeTransportManager(ChromeProcess(pathToChrome))
       return KPuppeteer(rpcManager)
     }
   }

@@ -1,18 +1,16 @@
 package io.dealpoint.kpuppeteer
 
 import io.dealpoint.kpuppeteer.utils.logger
-import java.io.File
+import java.nio.file.Paths
 import kotlin.concurrent.thread
 
-const val DEFAULT_CHROME_INSTALLATION = "/Applications/Google Chrome.app/Contents/MacOS/"
-
-class ChromeProcess(pathToChrome: String? = DEFAULT_CHROME_INSTALLATION) : AutoCloseable {
+class ChromeProcess(pathToChrome: String) : AutoCloseable {
   private val port = 9292
+  private val path = Paths.get(pathToChrome).toAbsolutePath()
   private val chromeOptions = listOf(
-    "./Google Chrome", "--headless", "--disable-gpu",
+    path.toString(), "--headless", "--disable-gpu", "--no-sandbox",
     "--remote-debugging-port=$port", "--crash-dumps-dir=/tmp")
   private val process = ProcessBuilder(chromeOptions)
-    .directory(File(pathToChrome))
     .start()
 
   private val errorStream = process.errorStream
@@ -44,14 +42,14 @@ class ChromeProcess(pathToChrome: String? = DEFAULT_CHROME_INSTALLATION) : AutoC
     val errorStreamReader = errorStream.bufferedReader()
     do {
       val line = errorStreamReader.readLine()
-      log.debug(line)
+      log.info(line)
       val match = regex.find(line)
       if (match !== null) {
         errorStreamReader.close()
         return match.value
       }
     } while (errorStreamReader.ready())
-    errorStreamReader.close()
+    this.close()
     throw Error("could not find web socket url in stderr")
   }
 
