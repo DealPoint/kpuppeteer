@@ -21,10 +21,14 @@ const val BROWSER_PROTOCOL =
   "https://chromium.googlesource.com/chromium/src/+/lkcr/third_party/WebKit/Source/core/inspector/browser_protocol.json?format=text"
 
 fun main(args: Array<String>) {
-  Codegen(args)
+  CodeGenerator(args)
 }
 
-class Codegen(args: Array<String>) {
+/**
+ * Generate the protocol classes for the
+ * [Chrome devtools protocol](https://chromedevtools.github.io/devtools-protocol/tot)
+ */
+class CodeGenerator(args: Array<String>) {
 
   private val objectMapper = jacksonObjectMapper()
   private val outDir = if (args.isNotEmpty()) File(args[0]) else null
@@ -34,13 +38,13 @@ class Codegen(args: Array<String>) {
       .merge(loadProtocol(JS_PROTOCOL))
 
   init {
-    log.info("initializing ${protocol.domains.size} domains")
+    println("[INFO] initializing ${protocol.domains.size} domains")
     initializeDomains()
-    genCode()
+    generateCode()
   }
 
   private fun loadProtocol(url: String): Protocol {
-    log.info("fetching protocol: $url")
+    println("[INFO] fetching protocol: $url")
     Base64.getDecoder()
       .wrap(URL(url).openStream())
       .use { stream -> InputStreamReader(stream, StandardCharsets.UTF_8)
@@ -57,14 +61,14 @@ class Codegen(args: Array<String>) {
     }
   }
 
-  private fun genCode() {
+  private fun generateCode() {
     protocol.domains.forEach {
       writeToOutDir(FileSpec
         .builder(GENERATED_PACKAGE, it.simpleName())
         .indent(GENERATED_FILE_INDENT)
         .addType(domainTypeSpecs[it.domain]!!.build()).build())
     }
-    genEntrypoint(protocol)
+    generateEntryPoint(protocol)
   }
 
   private fun buildDomainType(domain: Domain) {
@@ -77,9 +81,9 @@ class Codegen(args: Array<String>) {
       try {
         val typeSpec = domainTypeSpecs[domain.domain]!!
         val dataClass = buildDataClass(
-          cap(event.name!!), event.description, event.parameters, domain)
+          capitalize(event.name!!), event.description, event.parameters, domain)
         val className = dataClass.simpleName() + "::class.java"
-        val functionName = "on" + cap(event.name)
+        val functionName = "on" + capitalize(event.name)
         val eventListener = FunSpec.builder(functionName)
           .addParameter("listener", ParameterizedTypeName.get(
             Consumer::class.asClassName(), dataClass))
@@ -97,10 +101,9 @@ class Codegen(args: Array<String>) {
         }
         typeSpec.addFunction(eventListener.build())
         typeSpec.addFunction(eventFuture.build())
-        log.info("generated functions for event $qualifiedEventName")
       } catch (ex: Exception) {
-        log.error(
-          "error generating functions for event $qualifiedEventName: $ex")
+        println(
+          "[ERROR] failed generating functions for event $qualifiedEventName: $ex")
       }
     }
   }
@@ -155,10 +158,9 @@ class Codegen(args: Array<String>) {
             .append("return rpcClient.call(\"${domain.domain}.${command.name}\", ")
             .append("params, ${resultType.simpleName()}::class.java)").toString())
         domainType.addFunction(funSpec.build())
-        log.info("generated command ${domain.simpleName()}.${command.name}")
       } catch (ex: Exception) {
-        log.info(
-          "error generating command ${domain.simpleName()}.${command.name}: $ex")
+        println(
+          "[ERROR] failed generating command ${domain.simpleName()}.${command.name}: $ex")
       }
     }
   }
@@ -188,8 +190,7 @@ class Codegen(args: Array<String>) {
           return ParameterizedTypeName.get(Map::class, String::class, Any::class)
         }
         if (parameter.className == null) {
-          val typeName =
-            cap(coalesce(parameter.id, parameter.name, "anonymous")!!)
+          val typeName = capitalize(parameter.id ?: parameter.name ?: "anonymous")
           parameter.className = domain.classNameForType(typeName)
           buildDataClass(
             typeName, parameter.description, parameter.properties, domain)
@@ -204,8 +205,8 @@ class Codegen(args: Array<String>) {
     }
   }
 
-  private fun genEntrypoint(protocol: Protocol) {
-    log.info("generating entrypoint Transport")
+  private fun generateEntryPoint(protocol: Protocol) {
+    println("[INFO] generating entry point Transport")
     val transport = TypeSpec.classBuilder("Transport")
         .addSuperinterface(AutoCloseable::class)
       .addProperty(PropertySpec
@@ -220,7 +221,7 @@ class Codegen(args: Array<String>) {
     for (domain in protocol.domains) {
       val className = ClassName("", domain.simpleName())
       transport.addProperty(PropertySpec
-        .builder(uncap(domain.domain), className)
+        .builder(unCapitalize(domain.domain), className)
         .initializer(domain.simpleName() + "(rpcClient)")
         .build())
     }
@@ -240,7 +241,7 @@ class Codegen(args: Array<String>) {
   private fun buildDataClass(
     name: String, description: String?, members: List<Parameter>, domain: Domain)
     : ClassName {
-    val typeName = cap(name)
+    val typeName = capitalize(name)
     val modifier = if (members.isEmpty())
       KModifier.ABSTRACT else KModifier.DATA
     val typeSpec = TypeSpec.classBuilder(typeName).addModifiers(modifier)
@@ -265,19 +266,15 @@ class Codegen(args: Array<String>) {
       typeSpec.primaryConstructor(constructor.build())
     }
     domainTypeSpecs[domain.domain]!!.addType(typeSpec.build())
-    log.info("generated ${modifier.name} class ${domain.simpleName()}.$typeName")
+    println(
+      "[INFO] generated ${modifier.name} class ${domain.simpleName()}.$typeName")
     return domain.classNameForType(typeName)
   }
 
-  private fun coalesce(vararg strs: String?): String? {
-    strs.forEach { if (it != null) return it }
-    return null
-  }
-
-  private fun cap(name: String): String =
+  private fun capitalize(name: String): String =
     name.substring(0, 1).toUpperCase() + name.substring(1)
 
-  private fun uncap(name: String?): String {
+  private fun unCapitalize(name: String?): String {
     val m = pattern.matcher(name!!)
     return if (m.matches()) {
       m.group(1).toLowerCase() + m.group(2)
@@ -288,7 +285,7 @@ class Codegen(args: Array<String>) {
 
   private fun writeToOutDir(file: FileSpec) {
     val logMessage = "writing file ${file.name} to package ${file.packageName}"
-    log.info(logMessage)
+    println("[INFO] $logMessage")
     try {
       if (outDir == null) {
         file.writeTo(System.out)
@@ -296,19 +293,18 @@ class Codegen(args: Array<String>) {
         file.writeTo(outDir)
       }
     } catch (ex: IOException) {
-      log.error("error $logMessage: $ex")
+      println("[ERROR] $logMessage: $ex")
     }
   }
 
   companion object {
-    val log = logger()
     val domainTypeSpecs = mutableMapOf<String, TypeSpec.Builder>()
     val generatedAnnotation = AnnotationSpec.builder(Generated::class)
-      .addMember("value = [%S]", Codegen::class.qualifiedName!!)
+      .addMember("value = [%S]", CodeGenerator::class.qualifiedName!!)
       .addMember("date = %S", Instant.now().toString())
       .build()
     val clientClass = ClassName(
-      Codegen::class.java.`package`.name + ".rpc", "RpcClient")
+      CodeGenerator::class.java.`package`.name + ".rpc", "RpcClient")
   }
 
 }

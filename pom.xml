@@ -5,7 +5,7 @@
 
   <groupId>io.dealpoint.kpuppeteer</groupId>
   <artifactId>kpuppeteer-parent</artifactId>
-  <version>0.1.2-SNAPSHOT</version>
+  <version>0.1.5-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>kpuppeteer</name>
@@ -72,8 +72,11 @@
     <kotlinpoet.version>0.7.0</kotlinpoet.version>
     <jackson.kotlin.version>2.9.4.1</jackson.kotlin.version>
     <java.websocket.version>1.3.0</java.websocket.version>
-    <slf4j.version>1.6.1</slf4j.version>
+    <slf4j.version>1.7.25</slf4j.version>
     <mockk.version>1.7.15</mockk.version>
+    <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
+    <maven.surfire.version>2.21.0</maven.surfire.version>
+    <maven.surfire.junit>1.2.0</maven.surfire.junit>
   </properties>
 
   <modules>
@@ -81,57 +84,86 @@
     <module>client</module>
   </modules>
 
-
   <dependencies>
+
+    <dependency>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-stdlib-jdk8</artifactId>
+      <version>${kotlin.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.java-websocket</groupId>
+      <artifactId>Java-WebSocket</artifactId>
+      <version>${java.websocket.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.squareup</groupId>
+      <artifactId>kotlinpoet</artifactId>
+      <version>${kotlinpoet.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.module</groupId>
+      <artifactId>jackson-module-kotlin</artifactId>
+      <version>${jackson.kotlin.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-surefire-provider</artifactId>
+      <version>${maven.surfire.junit}</version>
+    </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
       <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
       <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>com.squareup</groupId>
-      <artifactId>kotlinpoet</artifactId>
-      <version>${kotlinpoet.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.module</groupId>
-      <artifactId>jackson-module-kotlin</artifactId>
-      <version>${jackson.kotlin.version}</version>
-    </dependency>
+
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
-      <artifactId>kotlin-stdlib-jdk8</artifactId>
+      <artifactId>kotlin-test-junit</artifactId>
       <version>${kotlin.version}</version>
+      <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <artifactId>slf4j-simple</artifactId>
       <version>${slf4j.version}</version>
+      <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.java-websocket</groupId>
-      <artifactId>Java-WebSocket</artifactId>
-      <version>${java.websocket.version}</version>
-    </dependency>
+
     <dependency>
       <groupId>io.mockk</groupId>
       <artifactId>mockk</artifactId>
       <version>${mockk.version}</version>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
 
   <profiles>
