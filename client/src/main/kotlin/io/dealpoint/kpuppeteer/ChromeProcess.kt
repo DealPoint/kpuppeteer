@@ -2,6 +2,7 @@ package io.dealpoint.kpuppeteer
 
 import io.dealpoint.kpuppeteer.utils.logger
 import java.nio.file.Paths
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 class ChromeProcess(pathToChrome: String) : AutoCloseable {
@@ -48,6 +49,7 @@ class ChromeProcess(pathToChrome: String) : AutoCloseable {
         errorStreamReader.close()
         return match.value
       }
+      TimeUnit.SECONDS.sleep(5)
     } while (errorStreamReader.ready())
     this.close()
     throw Error("could not find web socket url in stderr")
