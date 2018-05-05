@@ -1,0 +1,46 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>kpuppeteer-parent</artifactId>
+    <groupId>io.dealpoint.kpuppeteer</groupId>
+    <version>0.1.2-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>codegen</artifactId>
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+  <build>
+    <sourceDirectory>${basedir}/src/main/kotlin</sourceDirectory>
+    <testSourceDirectory>${basedir}/src/test/kotlin</testSourceDirectory>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>${maven-jar.version}</version>
+      </plugin>
+      <plugin>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-maven-plugin</artifactId>
+        <version>${kotlin.version}</version>
+        <executions>
+          <execution>
+            <id>compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>test-compile</id>
+            <goals>
+              <goal>test-compile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

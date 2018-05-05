@@ -1,0 +1,186 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.dealpoint.kpuppeteer</groupId>
+  <artifactId>kpuppeteer-parent</artifactId>
+  <version>0.1.2-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>kpuppeteer</name>
+  <description>Kotlin-based remote control API for Headless Chrome–based on chropro with
+    functionality similar to Puppeteer
+  </description>
+  <url>https://github.com/DealPoint/kpuppeteer</url>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Thomas Jung</name>
+      <email>tj@dealpoint.io</email>
+      <organization>DealPoint</organization>
+      <organizationUrl>https://www.dealpoint.io</organizationUrl>
+    </developer>
+    <developer>
+      <name>Joshua Fairchild</name>
+      <email>tjoshua@dealpoint.io</email>
+      <organization>DealPoint</organization>
+      <organizationUrl>https://www.dealpoint.io</organizationUrl>
+    </developer>
+    <developer>
+      <name>Nick Sherred</name>
+      <email>nick@dealpoint.io</email>
+      <organization>DealPoint</organization>
+      <organizationUrl>https://www.dealpoint.io</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/DealPoint/kpuppeteer.git</connection>
+    <developerConnection>scm:git:ssh://github.com/DealPoint/kpuppeteer.git</developerConnection>
+    <url>http://github.com/DealPoint/kpuppeteer/tree/master</url>
+  </scm>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <java.major.version>1.8</java.major.version>
+    <maven.compiler.source>${java.major.version}</maven.compiler.source>
+    <maven.compiler.target>${java.major.version}</maven.compiler.target>
+    <kotlin.compiler.jvmTarget>${java.major.version}</kotlin.compiler.jvmTarget>
+    <kotlin.version>1.2.40</kotlin.version>
+    <junit.version>5.1.1</junit.version>
+    <maven-assembly.version>3.1.0</maven-assembly.version>
+    <maven-jar.version>3.0.2</maven-jar.version>
+    <kotlinpoet.version>0.7.0</kotlinpoet.version>
+    <jackson.kotlin.version>2.9.4.1</jackson.kotlin.version>
+    <java.websocket.version>1.3.0</java.websocket.version>
+    <slf4j.version>1.6.1</slf4j.version>
+    <mockk.version>1.7.15</mockk.version>
+  </properties>
+
+  <modules>
+    <module>codegen</module>
+    <module>client</module>
+  </modules>
+
+
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup</groupId>
+      <artifactId>kotlinpoet</artifactId>
+      <version>${kotlinpoet.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.module</groupId>
+      <artifactId>jackson-module-kotlin</artifactId>
+      <version>${jackson.kotlin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-stdlib-jdk8</artifactId>
+      <version>${kotlin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.java-websocket</groupId>
+      <artifactId>Java-WebSocket</artifactId>
+      <version>${java.websocket.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.mockk</groupId>
+      <artifactId>mockk</artifactId>
+      <version>${mockk.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>2.2.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>2.9.1</version>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.6</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>kpuppeteer-parent</artifactId>
+    <groupId>io.dealpoint.kpuppeteer</groupId>
+    <version>0.1.2-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>client</artifactId>
+
+  <build>
+    <sourceDirectory>${basedir}/src/main/kotlin</sourceDirectory>
+    <testSourceDirectory>${basedir}/src/test/kotlin</testSourceDirectory>
+    <resources>
+      <resource>
+        <directory>${basedir}/src/resources</directory>
+      </resource>
+    </resources>
+
+    <plugins>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>1.1.1</version>
+
+        <executions>
+          <execution>
+            <id>generate-model</id>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <phase>generate-sources</phase>
+          </execution>
+        </executions>
+
+        <configuration>
+          <mainClass>io.dealpoint.kpuppeteer.CodegenKt</mainClass>
+          <includePluginDependencies>true</includePluginDependencies>
+          <arguments>
+            <argument>
+              ${project.basedir}/src/main/kotlin
+            </argument>
+          </arguments>
+
+          <executableDependency>
+            <groupId>io.dealpoint.kpuppeteer</groupId>
+            <artifactId>codegen</artifactId>
+          </executableDependency>
+
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>io.dealpoint.kpuppeteer</groupId>
+            <artifactId>codegen</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-maven-plugin</artifactId>
+        <version>${kotlin.version}</version>
+        <executions>
+          <execution>
+            <id>compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>test-compile</id>
+            <goals>
+              <goal>test-compile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>${maven-jar.version}</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+
