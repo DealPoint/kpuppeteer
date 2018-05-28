@@ -7,7 +7,7 @@
   <parent>
     <artifactId>kpuppeteer-parent</artifactId>
     <groupId>io.dealpoint.kpuppeteer</groupId>
-    <version>0.1.5-SNAPSHOT</version>
+    <version>0.1.7-SNAPSHOT</version>
   </parent>
 
   <artifactId>client</artifactId>

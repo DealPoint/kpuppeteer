@@ -6,6 +6,7 @@ import java.net.URI
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
 class KPuppeteer(pathToChrome: Path) : AutoCloseable {
@@ -18,6 +19,7 @@ class KPuppeteer(pathToChrome: Path) : AutoCloseable {
     "--remote-debugging-port=$port", "--crash-dumps-dir=/tmp")
   private val process = ProcessBuilder(chromeOptions).start()
   private val connections = ConcurrentHashMap<String, Transport>()
+  private val isShuttingDown = AtomicBoolean(false)
 
   val browserConnection = try {
     process.inputStream.close()
@@ -63,9 +65,11 @@ class KPuppeteer(pathToChrome: Path) : AutoCloseable {
     return newTransport
   }
 
-  @Synchronized
   override fun close() {
-    log.info("shutting down headless Chrome process")
+    if (isShuttingDown.getAndSet(true)) {
+      return
+    }
+    log.info("disconnecting headless Chrome web sockets")
     connections.entries.forEach {
       try {
         it.value.close()
@@ -73,7 +77,8 @@ class KPuppeteer(pathToChrome: Path) : AutoCloseable {
         log.info("failed to close websocket for ${it.key}")
       }
     }
-    process.destroyForcibly()
+    log.info("shutting down headless Chrome process")
+    process.destroyForcibly().waitFor(2, TimeUnit.SECONDS)
   }
 
   private fun getChromeWebSocketUrl(process: Process): String {
