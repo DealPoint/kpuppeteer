@@ -3,63 +3,52 @@ package io.dealpoint.kpuppeteer.rpc
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import io.dealpoint.kpuppeteer.utils.logger
+import org.java_websocket.WebSocket
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.drafts.Draft_17
 import org.java_websocket.handshake.ServerHandshake
-import java.io.IOException
+import org.slf4j.LoggerFactory
 import java.net.URI
 import java.nio.channels.ClosedChannelException
 import java.util.*
 import java.util.Collections.emptyList
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicLong
 import java.util.function.Consumer
 
 private val emptyListeners = emptyList<Consumer<JsonNode>>()
-const val FUTURE_TIMEOUT_SECONDS: Long = 5
+const val FUTURE_TIMEOUT_SECONDS: Long = 10
 
 class RpcClient(url: String) : AutoCloseable {
 
   private val idSeq = AtomicLong(0)
-  private val methodFutures = ConcurrentHashMap<Long, CompletableFuture<JsonNode>>()
-  private val eventFutures = ConcurrentHashMap<String, MutableList<CompletableFuture<JsonNode>>>()
-  private val eventListeners = ConcurrentHashMap<String, MutableList<Consumer<JsonNode>>>()
+  private val methodFutures =
+    ConcurrentHashMap<Long, CompletableFuture<JsonNode>>()
+  private val eventFutures =
+    ConcurrentHashMap<String, MutableList<CompletableFuture<JsonNode>>>()
+  private val eventListeners =
+    ConcurrentHashMap<String, MutableList<Consumer<JsonNode>>>()
   private val socket: RpcSocket
-  internal var closeReason: Exception? = null
 
   init {
-
-    log.info("connecting to " + url)
+    log.info("connecting to $url")
     socket = RpcSocket(url)
-    try {
-      socket.connectBlocking()
-    } catch (e: InterruptedException) {
-      Thread.currentThread().interrupt()
-    }
-
-    log.info("connected")
-    if (closeReason != null) {
-      if (closeReason is IOException) {
-        throw closeReason as IOException
-      } else {
-        throw IOException(closeReason)
-      }
-    }
+    socket.connect()
   }
 
   fun call(method: String, params: Map<String, Any?>): CompletableFuture<JsonNode> {
-    if (closeReason != null) {
-      throw IllegalStateException("closed", closeReason)
+    return synchronized(socket) {
+      if (socket.readyState !== WebSocket.READYSTATE.OPEN) {
+        throw IllegalStateException("not connected")
+      }
+      val request = RpcRequest(idSeq.getAndIncrement(), method, params)
+      val future = CompletableFuture<JsonNode>()
+      methodFutures[request.id] = future
+      val text = objectMapper.writeValueAsString(request)
+      log.trace("> {}", text)
+      socket.send(text)
+      future
     }
-    val request = RpcRequest(idSeq.getAndIncrement(), method, params)
-    val future = CompletableFuture<JsonNode>()
-    methodFutures.put(request.id, future)
-    val text = objectMapper.writeValueAsString(request)
-    socket.send(text)
-    return future
   }
 
   fun <T> call(method: String, params: Map<String, Any?>, resultType: Class<T>): T {
@@ -68,12 +57,11 @@ class RpcClient(url: String) : AutoCloseable {
       .get(FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
   }
 
-  @Synchronized
   private fun addEventListener(method: String, listener: Consumer<JsonNode>) {
     var list = eventListeners[method]
     if (list == null) {
       list = Collections.synchronizedList(ArrayList())
-      eventListeners.put(method, list!!)
+      eventListeners[method] = list!!
     }
     list.add(listener)
   }
@@ -84,24 +72,22 @@ class RpcClient(url: String) : AutoCloseable {
     })
   }
 
-  @Synchronized
   fun <T> eventFuture(method: String, eventType: Class<T>): CompletableFuture<T> {
     val future = CompletableFuture<JsonNode>()
     var list = eventFutures[method]
     if (list == null) {
       list = Collections.synchronizedList(ArrayList())
-      eventFutures.put(method, list!!)
+      eventFutures[method] = list!!
     }
     list.add(future)
     return future.thenApply { el -> objectMapper.treeToValue(el, eventType) }
   }
 
-  @Throws(IOException::class)
   override fun close() {
-    close(ClosedChannelException())
+    cleanup(ClosedChannelException())
   }
 
-  @Synchronized internal fun dispatchEvent(method: String, event: JsonNode) {
+  private fun dispatchEvent(method: String, event: JsonNode) {
     val futures = eventFutures.remove(method)
     if (futures != null) {
       for (future in futures) {
@@ -113,7 +99,7 @@ class RpcClient(url: String) : AutoCloseable {
     }
   }
 
-  @Synchronized internal fun dispatchResponse(response: RpcResponse) {
+  private fun dispatchResponse(response: RpcResponse) {
     val future = methodFutures.remove(response.id)
     if (future != null) {
       if (response.error != null) {
@@ -124,32 +110,53 @@ class RpcClient(url: String) : AutoCloseable {
     }
   }
 
-  private fun close(reason: Exception) {
-    if (closeReason == null) {
-      closeReason = reason
+  private fun cleanup(reason: Exception?) {
+    synchronized(socket) {
       socket.close()
     }
-  }
-
-  @Synchronized private fun cleanup() {
-    for (future in methodFutures.values) {
-      future.completeExceptionally(closeReason!!)
+    completeFutures(methodFutures.values, reason)
+    for (futures in eventFutures.values) {
+      completeFutures(futures, reason)
     }
     methodFutures.clear()
-
-    for (futures in eventFutures.values) {
-      for (future in methodFutures.values) {
-        future.completeExceptionally(closeReason!!)
-      }
-    }
     eventFutures.clear()
   }
 
-  internal inner class RpcSocket(url: String) : WebSocketClient(URI.create(url), Draft_17()) {
+  private fun <T, C: Iterable<CompletableFuture<T>>> completeFutures(
+    futures: C, reason: Exception?
+  ) {
+    futures.forEach {
+      if (reason === null) {
+        it.complete(null)
+      } else {
+        it.completeExceptionally(reason)
+      }
+    }
+  }
+
+  private inner class RpcSocket(private val url: String)
+    : WebSocketClient(URI.create(url), Draft_17())
+  {
+
+    private val connectLatch = CountDownLatch(1)
+
+    override fun connect() {
+      super.connect()
+      connectLatch.await(FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+      if (connectLatch.count > 0) {
+        throw TimeoutException("timeout attempting to connect to $url")
+      }
+    }
+
+    override fun connectBlocking(): Boolean {
+      throw NotImplementedError()
+    }
 
     override fun onMessage(message: String) {
+      if (log.isTraceEnabled) {
+        log.trace("< {}", message.take(255))
+      }
       val response = objectMapper.readValue<RpcResponse>(message)
-
       if (response.method !== null && response.params !==null) {
         dispatchEvent(response.method, response.params)
       } else {
@@ -158,24 +165,23 @@ class RpcClient(url: String) : AutoCloseable {
     }
 
     override fun onClose(code: Int, reason: String, remote: Boolean) {
-      if (closeReason != null) {
-        closeReason = RpcException(code.toLong(), reason)
-        cleanup()
-      }
+      cleanup(RpcException(code.toLong(), reason))
     }
 
     override fun onError(e: Exception) {
       log.error(e.message)
-      this@RpcClient.close(e)
+      this@RpcClient.cleanup(e)
     }
 
     override fun onOpen(serverHandshake: ServerHandshake) {
-
+      connectLatch.countDown()
     }
   }
 
-  companion object {
-    internal var objectMapper = jacksonObjectMapper()
-    internal val log = logger()
+  private companion object {
+    val objectMapper = jacksonObjectMapper()
+    private val log =
+      LoggerFactory.getLogger(this::class.java.enclosingClass.simpleName)!!
   }
+
 }

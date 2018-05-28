@@ -4,12 +4,12 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import io.dealpoint.kpuppeteer.Codegen.Companion.clientClass
-import io.dealpoint.kpuppeteer.Codegen.Companion.domainTypeSpecs
-import io.dealpoint.kpuppeteer.Codegen.Companion.generatedAnnotation
+import io.dealpoint.kpuppeteer.CodeGenerator.Companion.clientClass
+import io.dealpoint.kpuppeteer.CodeGenerator.Companion.domainTypeSpecs
+import io.dealpoint.kpuppeteer.CodeGenerator.Companion.generatedAnnotation
 
 data class Domain(
-  val domain: String?,
+  val domain: String,
   val commands: List<Command>?,
   val events: List<Command>?,
   val experimental: Boolean?,
@@ -24,7 +24,7 @@ data class Domain(
   }
 
   fun simpleName(): String {
-    return domain!! + "Domain"
+    return domain + "Domain"
   }
 
   fun classNameForType(typeName: String): ClassName {
@@ -33,7 +33,6 @@ data class Domain(
 
   fun initialize() {
     try {
-      val domainName = domain!!
       val domainTypeBuilder = TypeSpec.classBuilder(simpleName())
         .addAnnotation(generatedAnnotation)
         .primaryConstructor(FunSpec.constructorBuilder()
@@ -42,10 +41,10 @@ data class Domain(
         .addProperty(PropertySpec.builder("rpcClient", clientClass)
           .initializer("rpcClient")
           .build())
-      domainTypeSpecs.put(domainName, domainTypeBuilder)
-      Codegen.log.info("initialized TypeSpec builder for domain $domainName")
+      domainTypeSpecs[domain] = domainTypeBuilder
+      println("[INFO] initialized TypeSpec builder for domain '$domain'")
     } catch (ex: Exception) {
-      Codegen.log.error("error initializing domain $domain.domain: $ex")
+      println("[ERROR] failed initializing domain '$domain': $ex")
     }
 
   }
