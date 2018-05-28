@@ -5,6 +5,7 @@ import java.nio.file.Paths
 import java.util.function.Consumer
 import kotlin.test.assertTrue
 
+@NoCi
 internal class KPuppeteerTest {
 
   @Test
