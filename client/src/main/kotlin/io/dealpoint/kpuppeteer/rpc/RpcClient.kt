@@ -13,6 +13,7 @@ import java.nio.channels.ClosedChannelException
 import java.util.*
 import java.util.Collections.emptyList
 import java.util.concurrent.*
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.function.Consumer
 
@@ -29,7 +30,11 @@ class RpcClient(url: String) : AutoCloseable {
   private val eventListeners =
     ConcurrentHashMap<String, MutableList<Consumer<JsonNode>>>()
   private val socket: RpcSocket
-
+  private val clientId = ++id
+  private val isShuttingDown = AtomicBoolean(false)
+  private val log =
+    LoggerFactory.getLogger(this::class.java.simpleName + clientId)!!
+  
   init {
     log.info("connecting to $url")
     socket = RpcSocket(url)
@@ -111,15 +116,19 @@ class RpcClient(url: String) : AutoCloseable {
   }
 
   private fun cleanup(reason: Exception?) {
-    synchronized(socket) {
-      socket.close()
+    if (isShuttingDown.getAndSet(true)) {
+      return
     }
+    log.info("attempting to close socket")
+    socket.close()
+    log.info("canceling all pending futures")
     completeFutures(methodFutures.values, reason)
     for (futures in eventFutures.values) {
       completeFutures(futures, reason)
     }
     methodFutures.clear()
     eventFutures.clear()
+    log.info("RPC client shut down")
   }
 
   private fun <T, C: Iterable<CompletableFuture<T>>> completeFutures(
@@ -180,8 +189,7 @@ class RpcClient(url: String) : AutoCloseable {
 
   private companion object {
     val objectMapper = jacksonObjectMapper()
-    private val log =
-      LoggerFactory.getLogger(this::class.java.enclosingClass.simpleName)!!
+    private var id = 0
   }
 
 }

@@ -5,7 +5,7 @@
   <parent>
     <artifactId>kpuppeteer-parent</artifactId>
     <groupId>io.dealpoint.kpuppeteer</groupId>
-    <version>0.1.7</version>
+    <version>0.1.8-SNAPSHOT</version>
   </parent>
 
   <artifactId>codegen</artifactId>
@@ -14,32 +14,5 @@
   </properties>
   <build>
     <sourceDirectory>${basedir}/src/main/kotlin</sourceDirectory>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>${maven-jar.version}</version>
-      </plugin>
-      <plugin>
-        <groupId>org.jetbrains.kotlin</groupId>
-        <artifactId>kotlin-maven-plugin</artifactId>
-        <version>${kotlin.version}</version>
-        <executions>
-          <execution>
-            <id>compile</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>test-compile</id>
-            <goals>
-              <goal>test-compile</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
   </build>
 </project>
