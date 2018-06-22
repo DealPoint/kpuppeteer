@@ -5,7 +5,7 @@
 
   <groupId>io.dealpoint.kpuppeteer</groupId>
   <artifactId>kpuppeteer-parent</artifactId>
-  <version>0.1.8-SNAPSHOT</version>
+  <version>1.0.9-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>kpuppeteer</name>
@@ -65,7 +65,7 @@
     <maven.compiler.source>${java.major.version}</maven.compiler.source>
     <maven.compiler.target>${java.major.version}</maven.compiler.target>
     <kotlin.compiler.jvmTarget>${java.major.version}</kotlin.compiler.jvmTarget>
-    <kotlin.version>1.2.41</kotlin.version>
+    <kotlin.version>1.2.50</kotlin.version>
     <junit.version>5.1.1</junit.version>
     <maven-assembly.version>3.1.0</maven-assembly.version>
     <maven-jar.version>3.0.2</maven-jar.version>
