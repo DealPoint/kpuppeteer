@@ -5,7 +5,7 @@
 
   <groupId>io.dealpoint.kpuppeteer</groupId>
   <artifactId>kpuppeteer-parent</artifactId>
-  <version>0.1.9-SNAPSHOT</version>
+  <version>0.1.10-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>kpuppeteer</name>

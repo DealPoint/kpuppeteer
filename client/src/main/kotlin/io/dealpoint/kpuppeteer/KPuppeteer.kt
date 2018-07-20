@@ -2,6 +2,7 @@ package io.dealpoint.kpuppeteer
 
 import io.dealpoint.kpuppeteer.generated.Transport
 import org.slf4j.LoggerFactory
+import java.lang.reflect.Field
 import java.net.URI
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
@@ -9,9 +10,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
-class KPuppeteer(pathToChrome: Path) : AutoCloseable {
-
-  private val port = 9292
+class KPuppeteer(pathToChrome: Path, private val port: Int = 9292) : AutoCloseable {
   private val path = pathToChrome.toRealPath()
   private val chromeOptions = listOf(
     path.toString(),
@@ -37,11 +36,29 @@ class KPuppeteer(pathToChrome: Path) : AutoCloseable {
 
   val version by lazy { browserConnection.browser.getVersion() }
 
+  //Only returns actual pid on unix systems
+  val pid by lazy {
+    var pid: Long = -1
+    val processClass = process::class.java
+    try {
+      if (processClass.name == "java.lang.UNIXProcess") {
+        val f: Field = processClass.getDeclaredField("pid")
+        f.isAccessible = true
+        pid = f.getLong(process)
+        f.isAccessible = false
+      }
+    } catch (e: Exception) {
+      pid = -1
+    }
+    pid
+  }
+
   init {
     Runtime.getRuntime().addShutdownHook(
       thread(start = false, name = "chrome shutdown hook", isDaemon = true) {
         close()
       })
+    log.info("KPuppeteer started with pid: $pid")
   }
 
   fun newPage(uri: URI? = null): Transport {
