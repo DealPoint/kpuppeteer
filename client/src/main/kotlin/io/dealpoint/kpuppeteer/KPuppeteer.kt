@@ -19,15 +19,17 @@ class KPuppeteer(pathToChrome: Path, private val port: Int = 9292) : AutoCloseab
   private val process = ProcessBuilder(chromeOptions).start()
   private val connections = ConcurrentHashMap<String, Transport>()
   private val isShuttingDown = AtomicBoolean(false)
+  private val readerClient = WarnReaderClient(log)
+  private var errorReader: Utf8StreamReader? = null
 
   val browserConnection = try {
-    process.inputStream.close()
     process.outputStream.close()
     val browserTargetUrl = getChromeWebSocketUrl(process)
     val newTransport = Transport(browserTargetUrl)
     val target = newTransport.target
     val targetId = target.getTargets().targetInfos.first().targetId
     connections[targetId] = newTransport
+    errorReader = Utf8StreamReader(readerClient, process.errorStream, "\n")
     newTransport
   } catch (ex: Exception) {
     process.destroyForcibly()
@@ -94,6 +96,7 @@ class KPuppeteer(pathToChrome: Path, private val port: Int = 9292) : AutoCloseab
         log.info("failed to close websocket for ${it.key}")
       }
     }
+    errorReader?.close()
     log.info("shutting down headless Chrome process")
     process.destroyForcibly().waitFor(2, TimeUnit.SECONDS)
   }
@@ -107,8 +110,6 @@ class KPuppeteer(pathToChrome: Path, private val port: Int = 9292) : AutoCloseab
       log.debug("chrome> {}", line)
       val match = regex.find(line)
       if (match !== null) {
-        errorStreamReader.close()
-        process.errorStream.close()
         return match.value
       }
       TimeUnit.MILLISECONDS.sleep(100)

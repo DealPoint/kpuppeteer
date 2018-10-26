@@ -16,9 +16,9 @@ import kotlin.reflect.jvm.internal.impl.renderer.KeywordStringsGenerated
 const val GENERATED_FILE_INDENT = "  "
 const val GENERATED_PACKAGE = "io.dealpoint.kpuppeteer.generated"
 const val JS_PROTOCOL =
-  "https://chromium.googlesource.com/v8/v8/+/master/src/inspector/js_protocol.json?format=text"
+  "https://raw.githubusercontent.com/ChromeDevTools/devtools-protocol/master/json/js_protocol.json"
 const val BROWSER_PROTOCOL =
-  "https://chromium.googlesource.com/chromium/src/+/lkcr/third_party/WebKit/Source/core/inspector/browser_protocol.json?format=text"
+  "https://raw.githubusercontent.com/ChromeDevTools/devtools-protocol/master/json/browser_protocol.json"
 
 fun main(args: Array<String>) {
   CodeGenerator(args)
@@ -45,10 +45,8 @@ class CodeGenerator(args: Array<String>) {
 
   private fun loadProtocol(url: String): Protocol {
     println("[INFO] fetching protocol: $url")
-    Base64.getDecoder()
-      .wrap(URL(url).openStream())
-      .use { stream -> InputStreamReader(stream, StandardCharsets.UTF_8)
-      .use { reader -> return objectMapper.readValue(reader) } }
+    val reader = URL(url).openStream().bufferedReader()
+    return objectMapper.readValue(reader)
   }
 
   private fun initializeDomains() {
